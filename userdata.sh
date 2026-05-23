@@ -11,10 +11,16 @@ apt-get install -y git \
     python3 \
     python3-pip \
     python3-venv \
+    python3.12-venv \
     python3-dev \
     default-libmysqlclient-dev \
     pkg-config \
-    awscli
+    unzip \
+    curl
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+unzip /tmp/awscliv2.zip -d /tmp
+/tmp/aws/install
 
 # Helper: fetch a SecureString or String from SSM Parameter Store
 ssm() { aws --region=us-east-1 ssm get-parameter --name "$1" --with-decryption --query 'Parameter.Value' --output text; }
