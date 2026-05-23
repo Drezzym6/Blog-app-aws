@@ -183,25 +183,35 @@ Health check on CloudFront. Primary = CloudFront alias. On failure → auto-swit
 apt-get update -y
 apt-get upgrade -y
 
-# Ubuntu 24.04 ships Python 3.12; PEP 668 blocks global pip.
-# pkg-config required by mysqlclient build step.
 apt-get install -y git \
-    python3 python3-pip python3-venv python3-dev \
-    default-libmysqlclient-dev pkg-config awscli
+    python3 \
+    python3-pip \
+    python3-venv \
+    python3.12-venv \
+    python3-dev \
+    default-libmysqlclient-dev \
+    pkg-config \
+    unzip \
+    curl
 
-ssm() { aws --region=us-east-1 ssm get-parameter \
-    --name "$1" --with-decryption \
-    --query 'Parameter.Value' --output text; }
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+unzip /tmp/awscliv2.zip -d /tmp
+/tmp/aws/install
 
-SSM_PREFIX="/yourname/capstone"
+ssm() { aws --region=us-east-1 ssm get-parameter --name "$1" --with-decryption --query 'Parameter.Value' --output text; }
+
+SSM_PREFIX="/andre/capstone"
+
 TOKEN=$(ssm "$SSM_PREFIX/token")
 
 cd /home/ubuntu/ || exit 1
-git clone https://"$TOKEN"@github.com/Drezzym6/andre-caps-aws.git
+git clone https://"$TOKEN"@github.com/Drezzym6/Blog-app-aws.git
 
-cd /home/ubuntu/andre-caps-aws || exit 1
+cd /home/ubuntu/Blog-app-aws || exit 1
 python3 -m venv venv
+# shellcheck disable=SC1091
 source venv/bin/activate
+
 pip install --upgrade pip
 pip install -r requirements.txt
 
@@ -211,34 +221,38 @@ DB_USERNAME=$(ssm "$SSM_PREFIX/username")
 DB_PASSWORD=$(ssm "$SSM_PREFIX/password")
 AWS_BUCKET=$(ssm "$SSM_PREFIX/s3_bucket")
 
-cat > /etc/blog.env << ENVEOF
+cat > /etc/blog.env << EOF
 SECRET_KEY=${SECRET_KEY}
 DEBUG=False
-DB_NAME=clarusway
+DB_NAME=andreblog
 DB_HOST=${DB_HOST}
 DB_USERNAME=${DB_USERNAME}
 DB_PASSWORD=${DB_PASSWORD}
 AWS_STORAGE_BUCKET_NAME=${AWS_BUCKET}
 AWS_S3_REGION_NAME=us-east-1
-ENVEOF
+EOF
 chmod 600 /etc/blog.env
 
-cd /home/ubuntu/andre-caps-aws/src || exit 1
-python3 manage.py collectstatic --noinput
-python3 manage.py migrate
+cd /home/ubuntu/Blog-app-aws/src || exit 1
+# shellcheck disable=SC1091
+set -a; source /etc/blog.env; set +a
+/home/ubuntu/Blog-app-aws/venv/bin/python manage.py collectstatic --noinput
+/home/ubuntu/Blog-app-aws/venv/bin/python manage.py migrate
 
-cat > /etc/systemd/system/blog.service << 'SVCEOF'
+cat > /etc/systemd/system/blog.service << 'EOF'
 [Unit]
 Description=Django Blog Application
 After=network.target
 
 [Service]
 User=root
-WorkingDirectory=/home/ubuntu/andre-caps-aws/src
+WorkingDirectory=/home/ubuntu/Blog-app-aws/src
 EnvironmentFile=/etc/blog.env
-Environment="PATH=/home/ubuntu/andre-caps-aws/venv/bin"
-ExecStart=/home/ubuntu/andre-caps-aws/venv/bin/gunicorn \
-    --workers 3 --bind 0.0.0.0:80 --timeout 120 \
+Environment="PATH=/home/ubuntu/Blog-app-aws/venv/bin"
+ExecStart=/home/ubuntu/Blog-app-aws/venv/bin/gunicorn \
+    --workers 3 \
+    --bind 0.0.0.0:80 \
+    --timeout 120 \
     --access-logfile /var/log/gunicorn-access.log \
     --error-logfile /var/log/gunicorn-error.log \
     cblog.wsgi:application
@@ -247,7 +261,7 @@ RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
-SVCEOF
+EOF
 
 systemctl daemon-reload
 systemctl enable blog
