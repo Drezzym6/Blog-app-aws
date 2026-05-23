@@ -26,9 +26,9 @@ TOKEN=$(ssm "$SSM_PREFIX/token")
 
 cd /home/ubuntu/ || exit 1
 # Replace "your-github-username" with your actual GitHub username
-git clone https://"$TOKEN"@github.com/your-github-username/andre-caps-aws.git
+git clone https://"$TOKEN"@github.com/Drezzym6/Blog-app-aws.git
 
-cd /home/ubuntu/andre-caps-aws || exit 1
+cd /home/ubuntu/Blog-app-aws || exit 1
 python3 -m venv venv
 # shellcheck disable=SC1091
 source venv/bin/activate
@@ -57,7 +57,7 @@ AWS_S3_REGION_NAME=us-east-1
 EOF
 chmod 600 /etc/blog.env
 
-cd /home/ubuntu/andre-caps-aws/src || exit 1
+cd /home/ubuntu/Blog-app-aws/src || exit 1
 python3 manage.py collectstatic --noinput
 python3 manage.py migrate
 
@@ -73,10 +73,10 @@ After=network.target
 
 [Service]
 User=root
-WorkingDirectory=/home/ubuntu/andre-caps-aws/src
+WorkingDirectory=/home/ubuntu/Blog-app-aws/src
 EnvironmentFile=/etc/blog.env
-Environment="PATH=/home/ubuntu/andre-caps-aws/venv/bin"
-ExecStart=/home/ubuntu/andre-caps-aws/venv/bin/gunicorn \
+Environment="PATH=/home/ubuntu/Blog-app-aws/venv/bin"
+ExecStart=/home/ubuntu/Blog-app-aws/venv/bin/gunicorn \
     --workers 3 \
     --bind 0.0.0.0:80 \
     --timeout 120 \
