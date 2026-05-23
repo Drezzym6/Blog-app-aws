@@ -64,8 +64,10 @@ EOF
 chmod 600 /etc/blog.env
 
 cd /home/ubuntu/Blog-app-aws/src || exit 1
-python3 manage.py collectstatic --noinput
-python3 manage.py migrate
+# shellcheck disable=SC1091
+set -a; source /etc/blog.env; set +a
+/home/ubuntu/Blog-app-aws/venv/bin/python manage.py collectstatic --noinput
+/home/ubuntu/Blog-app-aws/venv/bin/python manage.py migrate
 
 # Run gunicorn as a systemd service instead of runserver:
 #   - runserver blocks the userdata script so the instance never signals
