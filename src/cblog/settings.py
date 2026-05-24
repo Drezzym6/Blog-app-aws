@@ -28,6 +28,15 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = ['*']
 
+# Tell Django the real protocol when sitting behind CloudFront / ALB
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Required by Django 4.x CSRF check for HTTPS requests through a reverse proxy
+CSRF_TRUSTED_ORIGINS = [
+    'https://www.andrediya.com',
+    'https://andrediya.com',
+]
+
 
 # Application definition
 
