@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+exec > >(tee /var/log/userdata.log | logger -t userdata) 2>&1
 
 apt-get update -y
 apt-get upgrade -y
@@ -51,16 +53,9 @@ DB_USERNAME=$(ssm "$SSM_PREFIX/username")
 DB_PASSWORD=$(ssm "$SSM_PREFIX/password")
 AWS_BUCKET=$(ssm "$SSM_PREFIX/s3_bucket")
 
-cat > /etc/blog.env << EOF
-SECRET_KEY=${SECRET_KEY}
-DEBUG=False
-DB_NAME=andreblog
-DB_HOST=${DB_HOST}
-DB_USERNAME=${DB_USERNAME}
-DB_PASSWORD=${DB_PASSWORD}
-AWS_STORAGE_BUCKET_NAME=${AWS_BUCKET}
-AWS_S3_REGION_NAME=us-east-1
-EOF
+printf 'SECRET_KEY=%s\nDEBUG=False\nDB_NAME=andreblog\nDB_HOST=%s\nDB_USERNAME=%s\nDB_PASSWORD=%s\nAWS_STORAGE_BUCKET_NAME=%s\nAWS_S3_REGION_NAME=us-east-1\n' \
+    "$SECRET_KEY" "$DB_HOST" "$DB_USERNAME" "$DB_PASSWORD" "$AWS_BUCKET" \
+    > /etc/blog.env
 chmod 600 /etc/blog.env
 
 cd /home/ubuntu/Blog-app-aws/src || exit 1
